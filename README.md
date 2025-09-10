@@ -71,9 +71,9 @@ python src/evaluate.py
 
 ## ⚡ Example Results
 
-Training Accuracy: 0.999
-Testing Accuracy: 0.949
-F1 Score: 0.795
-Precision Score: 0.829
-Recall Score: 0.763
-ROC AUC Score: 0.981
+- Training Accuracy: 0.999
+- Testing Accuracy: 0.949
+- F1 Score: 0.795
+- Precision Score: 0.829
+- Recall Score: 0.763
+- ROC AUC Score: 0.981

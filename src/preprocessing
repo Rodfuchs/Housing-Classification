@@ -1,0 +1,84 @@
+import pandas as pd
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer, make_column_transformer
+
+def load_data(url):
+    path = 'https://drive.google.com/uc?export=download&id='+url.split('/')[-2]
+    data = pd.read_csv(path)
+    return data
+
+def preprocess_data(data):
+    # Drop columns with many missing values
+    data = data.drop(['FireplaceQu', 'MasVnrType', 'Alley','PoolQC', 'Fence', 'MiscFeature'], axis=1)
+    
+    # Split features and target
+    X = data
+    y = data.pop('Expensive')
+    
+    # Categorical and numerical columns
+    X_cat_columns = X.select_dtypes(exclude="number").columns
+    X_num_columns = X.select_dtypes(include="number").columns
+    
+    # Ordinal columns
+    ordinal_cols = ["ExterQual", "ExterCond", "BsmtQual", "BsmtCond",
+                    "BsmtExposure", "BsmtFinType1", "KitchenQual",
+                    "LotShape", "LandSlope", "Functional",
+                    "GarageQual", "GarageCond", "HeatingQC", "PavedDrive"]
+    
+    # Ordinal orders
+    exter_qual_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    exter_cond_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    bsmt_qual_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    bsmt_cond_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    bsmt_exposure_order = ["No", "Mn", "Av", "Gd"]
+    bsmt_fintype1_order = ["Unf", "LwQ", "Rec", "BLQ", "ALQ", "GLQ"]
+    kitchen_qual_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    lot_shape_order = ["IR3", "IR2", "IR1", "Reg"]
+    land_slope_order = ["Sev", "Mod", "Gtl"]
+    functional_order = ["Sal", "Sev", "Maj2", "Maj1", "Mod", "Min2", "Min1", "Typ"]
+    garage_qual_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    garage_cond_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    heating_qc_order = ["Po", "Fa", "TA", "Gd", "Ex"]
+    paved_drive_order = ["N", "P", "Y"]
+
+    ordinal_encoder = OrdinalEncoder(categories=[
+        exter_qual_order, exter_cond_order, bsmt_qual_order, bsmt_cond_order,
+        bsmt_exposure_order, bsmt_fintype1_order, kitchen_qual_order, lot_shape_order,
+        land_slope_order, functional_order, garage_qual_order, garage_cond_order,
+        heating_qc_order, paved_drive_order
+    ], handle_unknown="use_encoded_value", unknown_value=-1)
+    
+    # One-hot columns
+    onehot_cols = ["MSZoning", "Condition1", "Heating", "Street", "CentralAir",
+                   "Foundation", "LandContour", "Utilities", "LotConfig",
+                   "Neighborhood", "Condition2", "BldgType", "HouseStyle",
+                   "RoofStyle", "RoofMatl", "Exterior1st", "Exterior2nd",
+                   "BsmtFinType2", "Electrical", "GarageType", "GarageFinish",
+                   "SaleType", "SaleCondition"]
+    
+    onehot_encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+    
+    # Pipelines
+    numeric_pipe = make_pipeline(SimpleImputer(), StandardScaler())
+    
+    categoric_pipe = make_pipeline(
+        SimpleImputer(strategy="most_frequent"),
+        ColumnTransformer([
+            ("cat_ordinal", ordinal_encoder, ordinal_cols),
+            ("cat_onehot", onehot_encoder, onehot_cols)
+        ])
+    )
+    
+    preprocessor = ColumnTransformer([
+        ("num", numeric_pipe, X_num_columns),
+        ("cat", categoric_pipe, X_cat_columns)
+    ])
+    
+    preprocessor = make_column_transformer(
+        (numeric_pipe, X_num_columns),
+        (categoric_pipe, X_cat_columns),
+    )
+    
+    return X, y, preprocessor
